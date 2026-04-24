@@ -17,6 +17,19 @@ export default function App() {
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
 
+  // Send welcome email on first login only
+  const sendWelcomeEmail = async (email, name) => {
+    try {
+      await fetch('/api/welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name })
+      });
+    } catch (err) {
+      console.warn('Welcome email failed (non-critical):', err);
+    }
+  };
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -28,6 +41,10 @@ export default function App() {
           const data = docSnap.data();
           setCompletedModules(new Set(data.completedModules || []));
           setEarnedBadges(data.earnedBadges || []);
+        } else {
+          // First-time Google login — send welcome email
+          sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
+          await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
         }
       } else {
         setCompletedModules(new Set());
@@ -71,8 +88,8 @@ export default function App() {
   };
 
   // Handle OTP-authenticated users (no Firebase user object)
-  const handleOtpLogin = async (displayName) => {
-    const otpUser = { displayName, email: displayName, isOtp: true };
+  const handleOtpLogin = async (displayName, email) => {
+    const otpUser = { displayName, email: email || displayName, isOtp: true };
     setUser(otpUser);
     
     // Load user progress from Firestore for OTP users
@@ -82,6 +99,10 @@ export default function App() {
       const data = docSnap.data();
       setCompletedModules(new Set(data.completedModules || []));
       setEarnedBadges(data.earnedBadges || []);
+    } else {
+      // First-time OTP login — send welcome email
+      sendWelcomeEmail(otpUser.email, displayName);
+      await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
     }
   };
 

@@ -63,13 +63,13 @@ export default function AuthView({ onOtpLogin }) {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        onOtpLogin(`${firstName.trim()} ${lastName.trim()}`);
+        onOtpLogin(`${firstName.trim()} ${lastName.trim()}`, email.trim());
       } else {
         showError(data.error || 'Invalid OTP.');
       }
     } catch {
       if (otp === '123456') {
-        onOtpLogin(`${firstName.trim()} ${lastName.trim()}`);
+        onOtpLogin(`${firstName.trim()} ${lastName.trim()}`, email.trim());
       } else {
         showError('Backend not running. Use mock OTP 123456.');
       }
