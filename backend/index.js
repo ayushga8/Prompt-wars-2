@@ -15,7 +15,12 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 // =============================================
 // Gemini AI Setup
 // =============================================
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+let genAI = null;
+if (process.env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+} else {
+  console.warn("WARNING: GEMINI_API_KEY is not set. AI features will not work until added.");
+}
 
 // =============================================
 // Email OTP Setup
@@ -104,6 +109,13 @@ Your responses should be:
 - Use simple language suitable for Indian students
 - Keep responses under 200 words unless the user asks for detail`;
 
+  if (!genAI) {
+    return res.status(500).json({ 
+      error: 'AI is not configured',
+      reply: 'AI features are currently unavailable because the API key is not set.' 
+    });
+  }
+
   // Try multiple models in order of preference
   const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
 
@@ -139,7 +151,7 @@ app.get('*', (req, res) => {
 // =============================================
 // Start Server
 // =============================================
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server running on port ${PORT}`);
 });
