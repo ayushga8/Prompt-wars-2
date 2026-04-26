@@ -407,8 +407,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-main); font-weight: 600; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
 .stat-card { padding: 1.5rem 1rem; text-align: center; border-radius: var(--radius-sm); animation: slideUp 0.6s ease both; }
 .stat-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
-.stat-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); font-family: var(--font-main); margin-bottom: 0.25rem; }
-.stat-display { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem; }
+.stat-display { font-size: 1.8rem; font-weight: 800; color: var(--primary); font-family: var(--font-main); margin-bottom: 0.25rem; }
 .stat-label { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 
 .eligibility-checker { padding: 1.5rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: rgba(255,255,255,0.02); margin: 1.5rem 0; }

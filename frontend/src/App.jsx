@@ -34,17 +34,22 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        // Load user progress from Firestore
-        const docRef = doc(db, 'users', u.email);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setCompletedModules(new Set(data.completedModules || []));
-          setEarnedBadges(data.earnedBadges || []);
-        } else {
-          // First-time Google login — send welcome email
-          sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
-          await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
+        try {
+          // Load user progress from Firestore
+          const docRef = doc(db, 'users', u.email);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCompletedModules(new Set(data.completedModules || []));
+            setEarnedBadges(data.earnedBadges || []);
+          } else {
+            // First-time Google login — send welcome email
+            sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
+            await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
+          }
+        } catch (err) {
+          console.warn('Failed to load user data from Firestore:', err);
+          // Continue with empty progress rather than getting stuck
         }
       } else {
         setCompletedModules(new Set());
@@ -92,17 +97,21 @@ export default function App() {
     const otpUser = { displayName, email: email || displayName, isOtp: true };
     setUser(otpUser);
     
-    // Load user progress from Firestore for OTP users
-    const docRef = doc(db, 'users', otpUser.email);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      setCompletedModules(new Set(data.completedModules || []));
-      setEarnedBadges(data.earnedBadges || []);
-    } else {
-      // First-time OTP login — send welcome email
-      sendWelcomeEmail(otpUser.email, displayName);
-      await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
+    try {
+      // Load user progress from Firestore for OTP users
+      const docRef = doc(db, 'users', otpUser.email);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCompletedModules(new Set(data.completedModules || []));
+        setEarnedBadges(data.earnedBadges || []);
+      } else {
+        // First-time OTP login — send welcome email
+        sendWelcomeEmail(otpUser.email, displayName);
+        await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
+      }
+    } catch (err) {
+      console.warn('Failed to load OTP user data from Firestore:', err);
     }
   };
 
