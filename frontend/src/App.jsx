@@ -30,32 +30,36 @@ export default function App() {
     }
   };
 
+  // Load user progress from Firestore (non-blocking, runs in background)
+  const loadUserProgress = async (u) => {
+    try {
+      const docRef = doc(db, 'users', u.email);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCompletedModules(new Set(data.completedModules || []));
+        setEarnedBadges(data.earnedBadges || []);
+      } else {
+        // First-time login — send welcome email
+        sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
+        await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
+      }
+    } catch (err) {
+      console.warn('Failed to load user data from Firestore:', err);
+    }
+  };
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      setLoading(false);
       if (u) {
-        try {
-          // Load user progress from Firestore
-          const docRef = doc(db, 'users', u.email);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCompletedModules(new Set(data.completedModules || []));
-            setEarnedBadges(data.earnedBadges || []);
-          } else {
-            // First-time Google login — send welcome email
-            sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
-            await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
-          }
-        } catch (err) {
-          console.warn('Failed to load user data from Firestore:', err);
-          // Continue with empty progress rather than getting stuck
-        }
+        // Load progress in background — don't block the UI
+        loadUserProgress(u);
       } else {
         setCompletedModules(new Set());
         setEarnedBadges([]);
       }
-      setLoading(false);
     });
     return unsub;
   }, []);
