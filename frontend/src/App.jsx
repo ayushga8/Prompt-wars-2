@@ -9,12 +9,57 @@ import ChatPanel from './components/ChatPanel';
 import BadgeBar from './components/BadgeBar';
 import modules from './data/modules';
 
+// Restore cached user from localStorage for instant rendering on refresh
+function getCachedUser() {
+  try {
+    const cached = localStorage.getItem('cachedUser');
+    return cached ? JSON.parse(cached) : null;
+  } catch { return null; }
+}
+
+function cacheUser(u) {
+  try {
+    if (u) {
+      localStorage.setItem('cachedUser', JSON.stringify({
+        displayName: u.displayName || '',
+        email: u.email,
+        isOtp: u.isOtp || false,
+      }));
+    } else {
+      localStorage.removeItem('cachedUser');
+    }
+  } catch { /* localStorage not available */ }
+}
+
+function getCachedProgress() {
+  try {
+    const cached = localStorage.getItem('cachedProgress');
+    return cached ? JSON.parse(cached) : null;
+  } catch { return null; }
+}
+
+function cacheProgress(completedModules, earnedBadges) {
+  try {
+    localStorage.setItem('cachedProgress', JSON.stringify({
+      completedModules: Array.from(completedModules),
+      earnedBadges,
+    }));
+  } catch { /* localStorage not available */ }
+}
+
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cachedUser = getCachedUser();
+  const cachedProgress = getCachedProgress();
+
+  const [user, setUser] = useState(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser); // Skip loading if we have a cached user
   const [activeModuleId, setActiveModuleId] = useState('overview');
-  const [completedModules, setCompletedModules] = useState(new Set());
-  const [earnedBadges, setEarnedBadges] = useState([]);
+  const [completedModules, setCompletedModules] = useState(
+    cachedProgress ? new Set(cachedProgress.completedModules) : new Set()
+  );
+  const [earnedBadges, setEarnedBadges] = useState(
+    cachedProgress ? cachedProgress.earnedBadges : []
+  );
   const [chatOpen, setChatOpen] = useState(false);
 
   // Send welcome email on first login only
@@ -37,8 +82,11 @@ export default function App() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setCompletedModules(new Set(data.completedModules || []));
-        setEarnedBadges(data.earnedBadges || []);
+        const modules = new Set(data.completedModules || []);
+        const badges = data.earnedBadges || [];
+        setCompletedModules(modules);
+        setEarnedBadges(badges);
+        cacheProgress(modules, badges);
       } else {
         // First-time login — send welcome email
         sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
@@ -51,15 +99,18 @@ export default function App() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
       if (u) {
-        // Load progress in background — don't block the UI
+        setUser(u);
+        cacheUser(u);
         loadUserProgress(u);
       } else {
+        setUser(null);
+        cacheUser(null);
+        localStorage.removeItem('cachedProgress');
         setCompletedModules(new Set());
         setEarnedBadges([]);
       }
+      setLoading(false);
     });
     return unsub;
   }, []);
@@ -78,6 +129,9 @@ export default function App() {
       setEarnedBadges(newBadges);
     }
 
+    // Cache progress locally
+    cacheProgress(newCompleted, newBadges);
+
     // Save to Firestore
     if (user && user.email) {
       const docRef = doc(db, 'users', user.email);
@@ -91,6 +145,8 @@ export default function App() {
   const handleSignOut = async () => {
     await signOut(auth);
     setUser(null);
+    cacheUser(null);
+    localStorage.removeItem('cachedProgress');
     setCompletedModules(new Set());
     setEarnedBadges([]);
     setActiveModuleId('overview');
@@ -100,17 +156,19 @@ export default function App() {
   const handleOtpLogin = async (displayName, email) => {
     const otpUser = { displayName, email: email || displayName, isOtp: true };
     setUser(otpUser);
+    cacheUser(otpUser);
     
     try {
-      // Load user progress from Firestore for OTP users
       const docRef = doc(db, 'users', otpUser.email);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setCompletedModules(new Set(data.completedModules || []));
-        setEarnedBadges(data.earnedBadges || []);
+        const modules = new Set(data.completedModules || []);
+        const badges = data.earnedBadges || [];
+        setCompletedModules(modules);
+        setEarnedBadges(badges);
+        cacheProgress(modules, badges);
       } else {
-        // First-time OTP login — send welcome email
         sendWelcomeEmail(otpUser.email, displayName);
         await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
       }
