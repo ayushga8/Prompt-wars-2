@@ -51,21 +51,21 @@ export default function ChatPanel({ moduleContext, onClose }) {
   };
 
   return (
-    <div className="chat-panel glass">
+    <div className="chat-panel glass" role="dialog" aria-label="AI Election Tutor chat">
       <div className="chat-header">
-        <h3>🤖 AI Election Tutor</h3>
-        <button className="chat-close-btn" onClick={onClose}>✕</button>
+        <h3 id="chat-title">🤖 AI Election Tutor</h3>
+        <button className="chat-close-btn" onClick={onClose} aria-label="Close chat panel">✕</button>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
         {messages.map((msg, i) => (
           <div key={i} className={`chat-message ${msg.role}`}>
-            <div className="msg-bubble">{msg.text}</div>
+            <div className="msg-bubble" aria-label={msg.role === 'user' ? 'Your message' : 'AI response'}>{msg.text}</div>
           </div>
         ))}
         {loading && (
           <div className="chat-message assistant">
-            <div className="msg-bubble typing">
+            <div className="msg-bubble typing" aria-label="AI is thinking">
               <span></span><span></span><span></span>
             </div>
           </div>
@@ -74,14 +74,17 @@ export default function ChatPanel({ moduleContext, onClose }) {
       </div>
 
       <div className="chat-input-area">
+        <label htmlFor="chat-input-field" className="sr-only">Type your question about elections</label>
         <input
+          id="chat-input-field"
           className="chat-input"
           placeholder="Ask about elections..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          aria-describedby="chat-title"
         />
-        <button className="chat-send-btn" onClick={handleSend} disabled={loading || !input.trim()}>
+        <button className="chat-send-btn" onClick={handleSend} disabled={loading || !input.trim()} aria-label="Send message">
           ➤
         </button>
       </div>

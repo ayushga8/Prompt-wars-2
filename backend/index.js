@@ -13,6 +13,48 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // =============================================
+// Rate Limiting (in-memory, per IP)
+// =============================================
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 5; // 5 OTPs per minute per IP
+
+function rateLimit(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+
+  if (!rateLimitMap.has(ip)) {
+    rateLimitMap.set(ip, []);
+  }
+
+  // Clean old entries
+  const timestamps = rateLimitMap.get(ip).filter(t => t > windowStart);
+  rateLimitMap.set(ip, timestamps);
+
+  if (timestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
+    return res.status(429).json({ error: 'Too many requests. Please try again in a minute.' });
+  }
+
+  timestamps.push(now);
+  next();
+}
+
+// Clean up rate limit map periodically to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  for (const [ip, timestamps] of rateLimitMap.entries()) {
+    const valid = timestamps.filter(t => t > windowStart);
+    if (valid.length === 0) {
+      rateLimitMap.delete(ip);
+    } else {
+      rateLimitMap.set(ip, valid);
+    }
+  }
+}, 5 * 60 * 1000); // Clean every 5 minutes
+
+// =============================================
 // Gemini AI Setup
 // =============================================
 let genAI = null;
@@ -27,6 +69,16 @@ if (process.env.GEMINI_API_KEY) {
 // =============================================
 const otps = {};
 
+// Clean expired OTPs every 10 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const email of Object.keys(otps)) {
+    if (now > otps[email].expiresAt) {
+      delete otps[email];
+    }
+  }
+}, 10 * 60 * 1000);
+
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -40,11 +92,17 @@ function generateOTP() {
 }
 
 // =============================================
-// OTP Endpoints
+// OTP Endpoints (rate-limited)
 // =============================================
-app.post('/send-otp', async (req, res) => {
+app.post('/send-otp', rateLimit, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
 
   const otp = generateOTP();
   otps[email] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 };
@@ -72,7 +130,7 @@ app.post('/send-otp', async (req, res) => {
   }
 });
 
-app.post('/verify-otp', (req, res) => {
+app.post('/verify-otp', rateLimit, (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
 
@@ -94,7 +152,7 @@ app.post('/verify-otp', (req, res) => {
 // =============================================
 // Welcome Email Endpoint
 // =============================================
-app.post('/api/welcome-email', async (req, res) => {
+app.post('/api/welcome-email', rateLimit, async (req, res) => {
   const { email, name } = req.body;
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
@@ -157,6 +215,9 @@ app.post('/api/chat', async (req, res) => {
   const { message, moduleContext } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
 
+  // Sanitize input — limit length to prevent prompt injection abuse
+  const sanitizedMessage = message.slice(0, 2000).trim();
+
   const systemPrompt = `You are an expert Indian Election Process Education tutor. The user is currently learning about "${moduleContext || 'Indian Elections'}". 
     
 Your responses should be:
@@ -183,7 +244,7 @@ Your responses should be:
       const model = genAI.getGenerativeModel({ model: modelName });
       const result = await model.generateContent([
         { text: systemPrompt },
-        { text: message }
+        { text: sanitizedMessage }
       ]);
       const reply = result.response.text();
       return res.json({ reply });

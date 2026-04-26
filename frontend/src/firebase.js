@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBQf-onP58YGl0uSMSLhUptEs13hQVYhYw",
-  authDomain: "promptwars-2.firebaseapp.com",
-  projectId: "promptwars-2",
-  storageBucket: "promptwars-2.firebasestorage.app",
-  messagingSenderId: "715657935538",
-  appId: "1:715657935538:web:90b1669b25a08db5a567ab",
-  measurementId: "G-RDSCN56FXE"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);

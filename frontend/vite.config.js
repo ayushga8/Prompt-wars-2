@@ -10,5 +10,10 @@ export default defineConfig({
       '/send-otp': 'http://localhost:3001',
       '/verify-otp': 'http://localhost:3001'
     }
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
   }
 })

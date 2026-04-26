@@ -41,33 +41,33 @@ export default function EligibilityChecker() {
   };
 
   return (
-    <div className="eligibility-checker">
+    <div className="eligibility-checker" role="region" aria-label="Voter Eligibility Checker">
       <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Am I Eligible to Vote?</h3>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Check your eligibility to vote in Indian elections</p>
 
-      <div className="checker-form">
+      <div className="checker-form" role="form" aria-label="Eligibility check form">
         <div className="form-group">
-          <label>Date of Birth</label>
-          <input type="date" className="input-field" value={dob} onChange={e => setDob(e.target.value)} />
+          <label htmlFor="eligibility-dob">Date of Birth</label>
+          <input id="eligibility-dob" type="date" className="input-field" value={dob} onChange={e => setDob(e.target.value)} aria-required="true" />
         </div>
         <div className="form-group">
-          <label>Are you an Indian citizen?</label>
-          <div className="radio-group">
+          <label id="citizen-label">Are you an Indian citizen?</label>
+          <div className="radio-group" role="radiogroup" aria-labelledby="citizen-label">
             <label className={`radio-option ${citizen === 'yes' ? 'selected' : ''}`}>
-              <input type="radio" name="citizen" value="yes" onChange={e => setCitizen(e.target.value)} /> Yes
+              <input type="radio" name="citizen" value="yes" onChange={e => setCitizen(e.target.value)} aria-label="Yes, I am an Indian citizen" /> Yes
             </label>
             <label className={`radio-option ${citizen === 'no' ? 'selected' : ''}`}>
-              <input type="radio" name="citizen" value="no" onChange={e => setCitizen(e.target.value)} /> No
+              <input type="radio" name="citizen" value="no" onChange={e => setCitizen(e.target.value)} aria-label="No, I am not an Indian citizen" /> No
             </label>
           </div>
         </div>
-        <button className="btn primary-btn" onClick={checkEligibility} disabled={!dob || !citizen} style={{ maxWidth: '300px' }}>
+        <button className="btn primary-btn" onClick={checkEligibility} disabled={!dob || !citizen} style={{ maxWidth: '300px' }} aria-label="Check voter eligibility">
           Check Eligibility
         </button>
       </div>
 
       {result && (
-        <div className={`eligibility-result fade-in ${result.eligible ? 'eligible' : 'not-eligible'}`}>
+        <div className={`eligibility-result fade-in ${result.eligible ? 'eligible' : 'not-eligible'}`} role="alert">
           <p className="result-message">{result.message}</p>
           <p className="result-tip">💡 {result.tip}</p>
         </div>

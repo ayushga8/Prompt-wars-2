@@ -124,15 +124,15 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <nav className="navbar glass">
+      <nav className="navbar glass" aria-label="Main navigation">
         <div className="nav-brand">
-          <span className="icon">🏛️</span>
+          <span className="icon" aria-hidden="true">🏛️</span>
           <span className="gradient-text nav-title">Election Assistant</span>
         </div>
         <div className="user-profile">
           <BadgeBar badges={earnedBadges} totalModules={modules.length - 1} />
           <span className="user-name">{user.displayName || user.email}</span>
-          <button className="btn outline-btn small" onClick={handleSignOut}>Sign Out</button>
+          <button className="btn outline-btn small" onClick={handleSignOut} aria-label="Sign out of your account">Sign Out</button>
         </div>
       </nav>
 
@@ -145,7 +145,7 @@ export default function App() {
           progress={progress}
         />
 
-        <main className="content-area glass">
+        <main className="content-area glass" aria-label={`Module: ${activeModule.title}`}>
           <ModuleContent
             module={activeModule}
             isCompleted={completedModules.has(activeModule.id)}
@@ -161,6 +161,8 @@ export default function App() {
         className="chat-toggle-btn"
         onClick={() => setChatOpen(!chatOpen)}
         title="Ask AI about elections"
+        aria-label={chatOpen ? 'Close AI chat' : 'Open AI chat'}
+        aria-expanded={chatOpen}
       >
         {chatOpen ? '✕' : '💬'}
       </button>
