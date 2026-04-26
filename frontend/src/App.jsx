@@ -61,6 +61,19 @@ export default function App() {
     cachedProgress ? cachedProgress.earnedBadges : []
   );
   const [chatOpen, setChatOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  // Apply theme to <html> element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   // Send welcome email on first login only
   const sendWelcomeEmail = async (email, name) => {
@@ -187,7 +200,15 @@ export default function App() {
   }
 
   if (!user) {
-    return <AuthView onOtpLogin={handleOtpLogin} />;
+    return (
+      <>
+        <button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 100 }}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <AuthView onOtpLogin={handleOtpLogin} />
+      </>
+    );
   }
 
   const activeModule = modules.find(m => m.id === activeModuleId) || modules[0];
@@ -202,6 +223,10 @@ export default function App() {
         </div>
         <div className="user-profile">
           <BadgeBar badges={earnedBadges} totalModules={modules.length - 1} />
+          <button className="theme-toggle" onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           <span className="user-name">{user.displayName || user.email}</span>
           <button className="btn outline-btn small" onClick={handleSignOut} aria-label="Sign out of your account">Sign Out</button>
         </div>
