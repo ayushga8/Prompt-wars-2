@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { useLanguage } from './i18n/LanguageContext';
+import { getModules } from './data/modules';
 import AuthView from './components/AuthView';
 import Sidebar from './components/Sidebar';
 import ModuleContent from './components/ModuleContent';
 import ChatPanel from './components/ChatPanel';
 import BadgeBar from './components/BadgeBar';
-import modules from './data/modules';
+import LanguageSwitcher from './components/LanguageSwitcher';
 
 // Restore cached user from localStorage for instant rendering on refresh
 function getCachedUser() {
@@ -48,6 +50,9 @@ function cacheProgress(completedModules, earnedBadges) {
 }
 
 export default function App() {
+  const { lang, t } = useLanguage();
+  const modules = getModules(lang);
+
   const cachedUser = getCachedUser();
   const cachedProgress = getCachedProgress();
 
@@ -95,11 +100,11 @@ export default function App() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const modules = new Set(data.completedModules || []);
+        const mods = new Set(data.completedModules || []);
         const badges = data.earnedBadges || [];
-        setCompletedModules(modules);
+        setCompletedModules(mods);
         setEarnedBadges(badges);
-        cacheProgress(modules, badges);
+        cacheProgress(mods, badges);
       } else {
         // First-time login — send welcome email
         sendWelcomeEmail(u.email, u.displayName || u.email.split('@')[0]);
@@ -176,11 +181,11 @@ export default function App() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const modules = new Set(data.completedModules || []);
+        const mods = new Set(data.completedModules || []);
         const badges = data.earnedBadges || [];
-        setCompletedModules(modules);
+        setCompletedModules(mods);
         setEarnedBadges(badges);
-        cacheProgress(modules, badges);
+        cacheProgress(mods, badges);
       } else {
         sendWelcomeEmail(otpUser.email, displayName);
         await setDoc(docRef, { completedModules: [], earnedBadges: [], joinedAt: new Date().toISOString() });
@@ -194,7 +199,7 @@ export default function App() {
     return (
       <div className="loading-screen">
         <div className="spinner"></div>
-        <p>Loading...</p>
+        <p>{t('loading')}</p>
       </div>
     );
   }
@@ -202,10 +207,13 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 100 }}>
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
+        <div className="auth-top-controls">
+          <LanguageSwitcher />
+          <button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 100 }}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+        </div>
         <AuthView onOtpLogin={handleOtpLogin} />
       </>
     );
@@ -219,16 +227,17 @@ export default function App() {
       <nav className="navbar glass" aria-label="Main navigation">
         <div className="nav-brand">
           <span className="icon" aria-hidden="true">🏛️</span>
-          <span className="gradient-text nav-title">Election Assistant</span>
+          <span className="gradient-text nav-title">{t('appTitle')}</span>
         </div>
         <div className="user-profile">
           <BadgeBar badges={earnedBadges} totalModules={modules.length - 1} />
+          <LanguageSwitcher />
           <button className="theme-toggle" onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <span className="user-name">{user.displayName || user.email}</span>
-          <button className="btn outline-btn small" onClick={handleSignOut} aria-label="Sign out of your account">Sign Out</button>
+          <button className="btn outline-btn small" onClick={handleSignOut} aria-label="Sign out of your account">{t('signOut')}</button>
         </div>
       </nav>
 
@@ -256,7 +265,7 @@ export default function App() {
       <button
         className="chat-toggle-btn"
         onClick={() => setChatOpen(!chatOpen)}
-        title="Ask AI about elections"
+        title={t('chatPlaceholder')}
         aria-label={chatOpen ? 'Close AI chat' : 'Open AI chat'}
         aria-expanded={chatOpen}
       >

@@ -2,6 +2,18 @@
    Election Process Education — Design System
    ============================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap');
+
+/* Hindi font override */
+[lang="hi"] { font-family: 'Noto Sans Devanagari', 'Inter', sans-serif; }
+[lang="hi"] h1, [lang="hi"] h2, [lang="hi"] h3,
+[lang="hi"] h4, [lang="hi"] h5, [lang="hi"] h6 { font-family: 'Noto Sans Devanagari', 'Outfit', sans-serif; }
+
+/* Tamil font override */
+[lang="ta"] { font-family: 'Noto Sans Tamil', 'Inter', sans-serif; }
+[lang="ta"] h1, [lang="ta"] h2, [lang="ta"] h3,
+[lang="ta"] h4, [lang="ta"] h5, [lang="ta"] h6 { font-family: 'Noto Sans Tamil', 'Outfit', sans-serif; }
+
 /* Dark Theme (default) */
 :root {
   --bg-color: #0b1120;
@@ -556,6 +568,48 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-main); font-weight: 600; }
 [data-theme="light"] .quiz-option:hover { background: rgba(0,0,0,0.05); }
 [data-theme="light"] .quiz-option.selected { background: rgba(37,99,235,0.08); }
 [data-theme="light"] .progress-bar-container { background: rgba(0,0,0,0.06); }
+
+/* =============================================
+   Language Switcher
+   ============================================= */
+.auth-top-controls {
+  position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.lang-switcher { position: relative; z-index: 101; }
+.lang-toggle {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.85rem; border-radius: 20px;
+  border: 1px solid var(--border-color); background: var(--surface-color);
+  color: var(--text-primary); cursor: pointer; font-family: var(--font-sans);
+  font-size: 0.85rem; font-weight: 500;
+  transition: all 0.2s ease; backdrop-filter: blur(10px);
+}
+.lang-toggle:hover { background: var(--hover-overlay); border-color: var(--primary); }
+.lang-globe { font-size: 1rem; }
+.lang-chevron { font-size: 0.7rem; transition: transform 0.2s; color: var(--text-secondary); }
+.lang-chevron.open { transform: rotate(180deg); }
+.lang-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; min-width: 160px;
+  border-radius: var(--radius-sm); padding: 0.4rem;
+  animation: fadeIn 0.15s ease; z-index: 102;
+}
+.lang-option {
+  display: flex; align-items: center; gap: 0.75rem;
+  width: 100%; padding: 0.6rem 0.85rem; border: none; border-radius: 6px;
+  background: transparent; color: var(--text-primary); cursor: pointer;
+  font-family: var(--font-sans); font-size: 0.85rem; text-align: left;
+  transition: background 0.15s;
+}
+.lang-option:hover { background: var(--hover-overlay); }
+.lang-option.active { background: rgba(59, 130, 246, 0.12); color: var(--primary); font-weight: 600; }
+.lang-flag {
+  font-size: 0.7rem; font-weight: 700; background: var(--hover-overlay);
+  padding: 0.15rem 0.35rem; border-radius: 3px; letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+.lang-option.active .lang-flag { background: rgba(59, 130, 246, 0.2); color: var(--primary); }
+.lang-check { margin-left: auto; color: var(--primary); font-weight: 700; }
 
 /* =============================================
    Responsive

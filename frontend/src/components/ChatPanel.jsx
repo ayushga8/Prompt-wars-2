@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const BACKEND_URL = '';
 export default function ChatPanel({ moduleContext, onClose }) {
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: `Hi! I'm your Election Education AI assistant. You're currently in the "${moduleContext}" module. Ask me anything about elections!` }
+    { role: 'assistant', text: t('chatGreeting')(moduleContext) }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,12 +15,12 @@ export default function ChatPanel({ moduleContext, onClose }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Update context message when module changes
+  // Update context message when module or language changes
   useEffect(() => {
     setMessages([
-      { role: 'assistant', text: `Hi! I'm your Election Education AI assistant. You're currently in the "${moduleContext}" module. Ask me anything about elections!` }
+      { role: 'assistant', text: t('chatGreeting')(moduleContext) }
     ]);
-  }, [moduleContext]);
+  }, [moduleContext, lang]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -32,12 +34,12 @@ export default function ChatPanel({ moduleContext, onClose }) {
       const res = await fetch(`${BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, moduleContext })
+        body: JSON.stringify({ message: userMsg, moduleContext, lang })
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', text: data.reply || 'Sorry, I could not generate a response.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: data.reply || t('chatFallback') }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Unable to reach the AI server. Make sure the backend is running.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: t('chatError') }]);
     } finally {
       setLoading(false);
     }
@@ -51,9 +53,9 @@ export default function ChatPanel({ moduleContext, onClose }) {
   };
 
   return (
-    <div className="chat-panel glass" role="dialog" aria-label="AI Election Tutor chat">
+    <div className="chat-panel glass" role="dialog" aria-label={t('chatTitle')}>
       <div className="chat-header">
-        <h3 id="chat-title">🤖 AI Election Tutor</h3>
+        <h3 id="chat-title">{t('chatTitle')}</h3>
         <button className="chat-close-btn" onClick={onClose} aria-label="Close chat panel">✕</button>
       </div>
 
@@ -74,11 +76,11 @@ export default function ChatPanel({ moduleContext, onClose }) {
       </div>
 
       <div className="chat-input-area">
-        <label htmlFor="chat-input-field" className="sr-only">Type your question about elections</label>
+        <label htmlFor="chat-input-field" className="sr-only">{t('chatPlaceholder')}</label>
         <input
           id="chat-input-field"
           className="chat-input"
-          placeholder="Ask about elections..."
+          placeholder={t('chatPlaceholder')}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

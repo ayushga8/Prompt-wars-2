@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext';
 import Timeline from './Timeline';
 import Quiz from './Quiz';
 import EVMSimulator from './EVMSimulator';
@@ -6,11 +7,13 @@ import EligibilityChecker from './EligibilityChecker';
 import Certificate from './Certificate';
 
 export default function ModuleContent({ module, isCompleted, onComplete, userName, badgeCount, totalModules }) {
+  const { t } = useLanguage();
+
   if (module.id === 'overview') {
     return (
       <div className="module-view fade-in">
         <div className="welcome-banner">
-          <h2 className="gradient-text">Welcome to the Election Process Explorer!</h2>
+          <h2 className="gradient-text">{t('welcomeTitle')}</h2>
           <p>{module.explanation}</p>
         </div>
         <ElectionStats />
@@ -28,7 +31,7 @@ export default function ModuleContent({ module, isCompleted, onComplete, userNam
         <span className="module-icon-large">{module.icon}</span>
         <div>
           <h2 className="gradient-text">{module.title}</h2>
-          {isCompleted && <span className="completed-tag">✅ Completed</span>}
+          {isCompleted && <span className="completed-tag">{t('completed')}</span>}
         </div>
       </div>
 
@@ -36,24 +39,24 @@ export default function ModuleContent({ module, isCompleted, onComplete, userNam
 
       {module.id === 'registration' && (
         <>
-          <h3 className="section-title">Check Your Eligibility</h3>
+          <h3 className="section-title">{t('checkEligibilityTitle')}</h3>
           <EligibilityChecker />
         </>
       )}
 
-      <h3 className="section-title">Step-by-Step Timeline</h3>
+      <h3 className="section-title">{t('timelineTitle')}</h3>
       <Timeline steps={module.timelineSteps} />
 
       {module.id === 'voting' && (
         <>
-          <h3 className="section-title">Try It Yourself</h3>
+          <h3 className="section-title">{t('tryItTitle')}</h3>
           <EVMSimulator />
         </>
       )}
 
       {module.quiz.length > 0 && (
         <>
-          <h3 className="section-title">Knowledge Check</h3>
+          <h3 className="section-title">{t('quizTitle')}</h3>
           <Quiz
             questions={module.quiz}
             moduleId={module.id}

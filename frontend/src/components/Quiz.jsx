@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect }) {
+  const { t } = useLanguage();
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [allCorrect, setAllCorrect] = useState(false);
@@ -41,7 +43,7 @@ export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect })
     return (
       <div className="quiz-completed-banner">
         <span className="quiz-check">✅</span>
-        <p>You've already completed this quiz and earned your badge!</p>
+        <p>{t('quizCompleted')}</p>
       </div>
     );
   }
@@ -81,19 +83,19 @@ export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect })
             disabled={Object.keys(answers).length < questions.length}
             style={{ maxWidth: '300px' }}
           >
-            Submit Answers
+            {t('submitAnswers')}
           </button>
         ) : allCorrect ? (
           <div className="quiz-result success">
-            <span>🎉</span> Perfect score! Badge unlocked!
+            <span>🎉</span> {t('perfectScore')}
           </div>
         ) : (
           <div className="quiz-result-area">
             <div className="quiz-result fail">
-              Some answers were incorrect. Try again!
+              {t('tryAgain')}
             </div>
             <button className="btn outline-btn" onClick={handleRetry} style={{ maxWidth: '200px', marginTop: '1rem' }}>
-              Retry Quiz
+              {t('retryQuiz')}
             </button>
           </div>
         )}

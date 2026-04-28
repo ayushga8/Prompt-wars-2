@@ -1,11 +1,14 @@
+import { useLanguage } from '../i18n/LanguageContext';
+
 export default function Sidebar({ modules, activeModuleId, completedModules, onSelect, progress }) {
+  const { t } = useLanguage();
   return (
     <aside className="sidebar glass" aria-label="Learning module navigation">
-      <h3>Learning Modules</h3>
+      <h3>{t('learningModules')}</h3>
 
-      <div className="progress-section" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Course progress: ${progress}%`}>
+      <div className="progress-section" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={`${t('progress')}: ${progress}%`}>
         <div className="progress-label">
-          <span>Progress</span>
+          <span>{t('progress')}</span>
           <span className="progress-pct">{progress}%</span>
         </div>
         <div className="progress-bar-container">
@@ -31,7 +34,7 @@ export default function Sidebar({ modules, activeModuleId, completedModules, onS
                 role="button"
                 tabIndex={0}
                 aria-current={isActive ? 'page' : undefined}
-                aria-label={`${mod.title}${isCompleted ? ' (completed)' : ''}`}
+                aria-label={`${mod.title}${isCompleted ? ` (${t('completed')})` : ''}`}
               >
                 <span className="nav-icon" aria-hidden="true">{mod.icon}</span>
                 <span className="nav-label">{mod.title}</span>

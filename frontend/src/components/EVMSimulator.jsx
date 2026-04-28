@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-
-const candidates = [
-  { name: 'Candidate A', party: 'National Progress Party', symbol: '🌸' },
-  { name: 'Candidate B', party: 'Democratic Alliance', symbol: '🌾' },
-  { name: 'Candidate C', party: 'People\'s Front', symbol: '🔔' },
-  { name: 'NOTA', party: 'None of the Above', symbol: '✖️' },
-];
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function EVMSimulator() {
+  const { t } = useLanguage();
+
+  const candidates = [
+    { name: t('candidateA'), party: t('partyA'), symbol: '🌸' },
+    { name: t('candidateB'), party: t('partyB'), symbol: '🌾' },
+    { name: t('candidateC'), party: t('partyC'), symbol: '🔔' },
+    { name: t('nota'), party: t('partyNota'), symbol: '✖️' },
+  ];
+
   const [step, setStep] = useState('ready'); // ready | voting | vvpat | done
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [vvpatVisible, setVvpatVisible] = useState(false);
@@ -54,19 +57,19 @@ export default function EVMSimulator() {
 
   return (
     <div className="evm-simulator" role="region" aria-label="EVM Simulator">
-      <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Interactive EVM Simulator</h3>
-      <p className="evm-subtitle">Experience how Electronic Voting Machines work in Indian elections</p>
+      <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{t('evmTitle')}</h3>
+      <p className="evm-subtitle">{t('evmSubtitle')}</p>
 
       {step === 'ready' && (
         <div className="evm-start fade-in">
           <div className="evm-machine glass">
             <div className="evm-screen" aria-live="polite">
-              <p>🗳️ EVM is ready</p>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Press the button below to begin voting</p>
+              <p>{t('evmReady')}</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t('evmReadySub')}</p>
             </div>
           </div>
-          <button className="btn primary-btn" style={{ maxWidth: '300px', margin: '1.5rem auto 0' }} onClick={() => setStep('voting')} aria-label="Start the voting simulation">
-            Start Voting
+          <button className="btn primary-btn" style={{ maxWidth: '300px', margin: '1.5rem auto 0' }} onClick={() => setStep('voting')} aria-label={t('startVoting')}>
+            {t('startVoting')}
           </button>
         </div>
       )}
@@ -76,7 +79,7 @@ export default function EVMSimulator() {
           <div className="evm-machine glass">
             <div className="evm-header">
               <span className="evm-led blink" aria-hidden="true"></span>
-              <span>Balloting Unit — Press the button next to your choice</span>
+              <span>{t('ballotingUnit')}</span>
             </div>
             <div className="evm-candidates" role="radiogroup" aria-label="Candidate selection">
               {candidates.map((c, i) => (
@@ -91,7 +94,7 @@ export default function EVMSimulator() {
                     onKeyDown={(e) => handleKeyDown(e, i)}
                     role="radio"
                     aria-checked={selectedIdx === i}
-                    aria-label={`Vote for ${c.name} — ${c.party}`}
+                    aria-label={`${c.name} — ${c.party}`}
                     tabIndex={0}
                   >
                     {selectedIdx === i ? '●' : '○'}
@@ -105,9 +108,9 @@ export default function EVMSimulator() {
             style={{ maxWidth: '300px', margin: '1.5rem auto 0' }}
             onClick={handlePress}
             disabled={selectedIdx === null}
-            aria-label={selectedIdx === null ? 'Select a candidate first' : `Confirm and cast vote for ${candidates[selectedIdx].name}`}
+            aria-label={selectedIdx === null ? t('selectCandidate') : t('confirmVote')}
           >
-            {selectedIdx === null ? 'Select a candidate first' : 'Confirm & Cast Vote'}
+            {selectedIdx === null ? t('selectCandidate') : t('confirmVote')}
           </button>
         </div>
       )}
@@ -117,12 +120,12 @@ export default function EVMSimulator() {
           <div className="evm-machine glass">
             <div className="evm-header">
               <span className="evm-led blink" style={{ background: 'var(--success)' }} aria-hidden="true"></span>
-              <span>Vote Recorded Successfully</span>
+              <span>{t('voteRecorded')}</span>
             </div>
           </div>
           <div className="vvpat-slip slide-down" aria-label="VVPAT verification slip">
             <div className="vvpat-paper">
-              <p className="vvpat-title">VVPAT Slip</p>
+              <p className="vvpat-title">{t('vvpatSlip')}</p>
               <div className="vvpat-detail">
                 <span className="vvpat-symbol" aria-hidden="true">{candidates[selectedIdx].symbol}</span>
                 <div>
@@ -130,7 +133,7 @@ export default function EVMSimulator() {
                   <p className="vvpat-party-name">{candidates[selectedIdx].party}</p>
                 </div>
               </div>
-              <p className="vvpat-timer" aria-live="polite">Slip visible for {countdown}s</p>
+              <p className="vvpat-timer" aria-live="polite">{t('slipVisible')} {countdown}s</p>
             </div>
           </div>
         </div>
@@ -139,10 +142,10 @@ export default function EVMSimulator() {
       {step === 'done' && (
         <div className="evm-done fade-in" style={{ textAlign: 'center', padding: '2rem 0' }} role="status">
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }} aria-hidden="true">🎉</div>
-          <h3 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>Your Vote Has Been Cast!</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>The VVPAT slip has dropped into the sealed box. Thank you for participating in democracy!</p>
-          <button className="btn outline-btn" style={{ maxWidth: '200px', margin: '1.5rem auto 0' }} onClick={() => { setStep('ready'); setSelectedIdx(null); }} aria-label="Try the EVM simulation again">
-            Try Again
+          <h3 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>{t('voteCast')}</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('voteCastSub')}</p>
+          <button className="btn outline-btn" style={{ maxWidth: '200px', margin: '1.5rem auto 0' }} onClick={() => { setStep('ready'); setSelectedIdx(null); }} aria-label={t('tryAgainEvm')}>
+            {t('tryAgainEvm')}
           </button>
         </div>
       )}

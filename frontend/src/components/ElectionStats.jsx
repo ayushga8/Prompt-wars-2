@@ -1,13 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
-const stats = [
-  { label: 'Registered Voters', icon: '👥', display: '96.9 Cr', target: 96.9, suffix: ' Cr', decimals: 1 },
-  { label: 'Polling Stations', icon: '🏫', display: '10.35 Lakh', target: 10.35, suffix: ' Lakh', decimals: 2 },
-  { label: 'EVMs Used', icon: '🗳️', display: '55 Lakh', target: 55, suffix: ' Lakh', decimals: 0 },
-  { label: 'Lok Sabha Seats', icon: '🏛️', display: '543', target: 543, suffix: '', decimals: 0 },
-  { label: 'Political Parties', icon: '🏴', display: '2,800+', target: 2800, suffix: '+', decimals: 0 },
-  { label: 'Days to Count', icon: '📊', display: '1 Day', target: 1, suffix: ' Day', decimals: 0 },
-];
+export default function ElectionStats() {
+  const { t } = useLanguage();
+
+  const stats = [
+    { label: t('statRegistered'), icon: '👥', target: 96.9, suffix: ' Cr', decimals: 1 },
+    { label: t('statPolling'), icon: '🏫', target: 10.35, suffix: ' Lakh', decimals: 2 },
+    { label: t('statEvm'), icon: '🗳️', target: 55, suffix: ' Lakh', decimals: 0 },
+    { label: t('statSeats'), icon: '🏛️', target: 543, suffix: '', decimals: 0 },
+    { label: t('statParties'), icon: '🏴', target: 2800, suffix: '+', decimals: 0 },
+    { label: t('statDays'), icon: '📊', target: 1, suffix: ' Day', decimals: 0 },
+  ];
+
+  return (
+    <div className="election-stats">
+      <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textAlign: 'center' }}>
+        {t('statsTitle')}
+      </h3>
+      <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
+        {t('statsSubtitle')}
+      </p>
+      <div className="stats-grid">
+        {stats.map((s, i) => (
+          <div key={i} className="stat-card glass" style={{ animationDelay: `${i * 0.1}s` }}>
+            <span className="stat-icon">{s.icon}</span>
+            <div className="stat-display">
+              <AnimatedCounter target={s.target} suffix={s.suffix} decimals={s.decimals} />
+            </div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 }) {
   const [count, setCount] = useState(0);
@@ -23,7 +50,6 @@ function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 })
           const animate = () => {
             const elapsed = Date.now() - start;
             const progress = Math.min(elapsed / duration, 1);
-            // Ease out cubic
             const eased = 1 - Math.pow(1 - progress, 3);
             setCount(eased * target);
             if (progress < 1) requestAnimationFrame(animate);
@@ -42,28 +68,4 @@ function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 })
     : Math.floor(count).toLocaleString('en-IN');
 
   return <span ref={ref}>{formatted}{suffix}</span>;
-}
-
-export default function ElectionStats() {
-  return (
-    <div className="election-stats">
-      <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textAlign: 'center' }}>
-        India's Election — By The Numbers
-      </h3>
-      <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
-        The largest democratic exercise in the world
-      </p>
-      <div className="stats-grid">
-        {stats.map((s, i) => (
-          <div key={i} className="stat-card glass" style={{ animationDelay: `${i * 0.1}s` }}>
-            <span className="stat-icon">{s.icon}</span>
-            <div className="stat-display">
-              <AnimatedCounter target={s.target} suffix={s.suffix} decimals={s.decimals} />
-            </div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }

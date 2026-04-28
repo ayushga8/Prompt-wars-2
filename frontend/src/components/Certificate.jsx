@@ -1,10 +1,19 @@
+import { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import confetti from 'canvas-confetti';
+import { useLanguage } from '../i18n/LanguageContext';
+import en from '../i18n/en';
+import hi from '../i18n/hi';
+
+const certStrings = { en, hi };
 
 export default function Certificate({ userName, badgeCount, totalModules }) {
+  const { t } = useLanguage();
   const allComplete = badgeCount >= totalModules;
+  const [certLang, setCertLang] = useState('en');
 
   const handleDownload = () => {
+    const ct = certStrings[certLang] || en;
     const canvas = document.createElement('canvas');
     canvas.width = 1000;
     canvas.height = 700;
@@ -29,12 +38,12 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     ctx.fillStyle = '#3b82f6';
     ctx.font = 'bold 42px Outfit, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Certificate of Completion', 500, 120);
+    ctx.fillText(ct.certTitle, 500, 120);
 
     // Subtitle
     ctx.fillStyle = '#94a3b8';
     ctx.font = '18px Inter, sans-serif';
-    ctx.fillText('Election Process Education Assistant', 500, 160);
+    ctx.fillText(ct.certProgram, 500, 160);
 
     // Decorative line
     ctx.strokeStyle = '#3b82f6';
@@ -47,7 +56,7 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     // "This certifies that"
     ctx.fillStyle = '#f1f5f9';
     ctx.font = '20px Inter, sans-serif';
-    ctx.fillText('This is to certify that', 500, 240);
+    ctx.fillText(ct.certCertifies, 500, 240);
 
     // Name
     ctx.fillStyle = '#8b5cf6';
@@ -57,29 +66,27 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     // Body
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '18px Inter, sans-serif';
-    ctx.fillText('has successfully completed all modules of the', 500, 360);
-    ctx.fillText('Election Process Education program and demonstrated', 500, 390);
-    ctx.fillText('knowledge of Indian democratic processes.', 500, 420);
+    ctx.fillText(ct.certBody1, 500, 360);
+    ctx.fillText(ct.certBody2, 500, 390);
+    ctx.fillText(ct.certBody3, 500, 420);
 
     // Badges
     ctx.fillStyle = '#f1f5f9';
     ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('Badges Earned: 📝 ⚖️ 📢 🗳️ 🏆', 500, 480);
+    ctx.fillText(ct.certBadges, 500, 480);
 
     // Date
     ctx.fillStyle = '#64748b';
     ctx.font = '14px Inter, sans-serif';
-    ctx.fillText(`Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, 500, 540);
+    ctx.fillText(`${ct.certDate}: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, 500, 540);
 
-    // ECI reference
+    // Footer
     ctx.fillStyle = '#475569';
     ctx.font = '12px Inter, sans-serif';
-    ctx.fillText('Election Process Education • Prompt Wars Hackathon 2026', 500, 620);
+    ctx.fillText(ct.certFooter, 500, 620);
 
     // Download as PDF
     const imgData = canvas.toDataURL('image/png');
-    // jsPDF uses landscape orientation, unit is pt, format matches canvas aspect ratio loosely or use A4
-    // We'll create a PDF matching the exact canvas dimensions (1000x700px -> roughly 750x525pt)
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'px',
@@ -95,14 +102,14 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     return (
       <div className="certificate-locked">
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-        <h3>Certificate Locked</h3>
+        <h3>{t('certLocked')}</h3>
         <p style={{ color: 'var(--text-secondary)' }}>
-          Complete all {totalModules} modules and pass their quizzes to unlock your Certificate of Completion.
+          {t('certLockedMsg')(totalModules)}
         </p>
         <div className="cert-progress">
           <div className="cert-progress-bar" style={{ width: `${(badgeCount / totalModules) * 100}%` }}></div>
         </div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{badgeCount} of {totalModules} modules completed</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t('certModulesCompleted')(badgeCount, totalModules)}</p>
       </div>
     );
   }
@@ -110,12 +117,21 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
   return (
     <div className="certificate-ready fade-in" style={{ textAlign: 'center' }}>
       <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎓</div>
-      <h3 className="gradient-text" style={{ fontSize: '1.5rem' }}>Congratulations, {userName}!</h3>
+      <h3 className="gradient-text" style={{ fontSize: '1.5rem' }}>{t('certReady')(userName)}</h3>
       <p style={{ color: 'var(--text-secondary)', margin: '1rem 0' }}>
-        You have completed all modules! Download your certificate below.
+        {t('certReadyMsg')}
       </p>
+      <div className="cert-lang-select" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('certLanguageLabel')}</span>
+        <button className={`btn small ${certLang === 'en' ? 'primary-btn' : 'outline-btn'}`} onClick={() => setCertLang('en')} style={{ minWidth: '80px' }}>
+          {t('certEnglish')}
+        </button>
+        <button className={`btn small ${certLang === 'hi' ? 'primary-btn' : 'outline-btn'}`} onClick={() => setCertLang('hi')} style={{ minWidth: '80px' }}>
+          {t('certHindi')}
+        </button>
+      </div>
       <button className="btn success-btn" style={{ maxWidth: '300px', margin: '0 auto' }} onClick={handleDownload}>
-        📥 Download Certificate
+        {t('downloadCert')}
       </button>
     </div>
   );
