@@ -5,6 +5,7 @@ import EVMSimulator from './EVMSimulator';
 import ElectionStats from './ElectionStats';
 import EligibilityChecker from './EligibilityChecker';
 import Certificate from './Certificate';
+import TextToSpeech from './TextToSpeech';
 
 export default function ModuleContent({ module, isCompleted, onComplete, userName, badgeCount, totalModules }) {
   const { t } = useLanguage();
@@ -14,7 +15,10 @@ export default function ModuleContent({ module, isCompleted, onComplete, userNam
       <div className="module-view fade-in">
         <div className="welcome-banner">
           <h2 className="gradient-text">{t('welcomeTitle')}</h2>
-          <p>{module.explanation}</p>
+          <div className="explanation-row">
+            <p>{module.explanation}</p>
+            <TextToSpeech text={module.explanation} />
+          </div>
         </div>
         <ElectionStats />
         <Timeline steps={module.timelineSteps} />
@@ -35,7 +39,10 @@ export default function ModuleContent({ module, isCompleted, onComplete, userNam
         </div>
       </div>
 
-      <p className="module-explanation">{module.explanation}</p>
+      <div className="explanation-row">
+        <p className="module-explanation">{module.explanation}</p>
+        <TextToSpeech text={module.explanation} />
+      </div>
 
       {module.id === 'registration' && (
         <>

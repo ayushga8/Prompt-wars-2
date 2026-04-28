@@ -1,64 +1,60 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithLang } from './testUtils';
 import EligibilityChecker from '../components/EligibilityChecker';
 
 describe('EligibilityChecker', () => {
-  it('renders the eligibility checker form', () => {
-    render(<EligibilityChecker />);
-    expect(screen.getByText('Am I Eligible to Vote?')).toBeInTheDocument();
-    expect(screen.getByLabelText('Date of Birth')).toBeInTheDocument();
-    expect(screen.getByText('Check Eligibility')).toBeInTheDocument();
+  it('renders the eligibility form', () => {
+    renderWithLang(<EligibilityChecker />);
+    expect(screen.getByText(/Am I Eligible to Vote/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Date of Birth/i)).toBeInTheDocument();
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.getByText('No')).toBeInTheDocument();
   });
 
-  it('disables check button when form is incomplete', () => {
-    render(<EligibilityChecker />);
-    const button = screen.getByText('Check Eligibility');
-    expect(button).toBeDisabled();
+  it('disables check button until both fields are filled', () => {
+    renderWithLang(<EligibilityChecker />);
+    const checkBtn = screen.getByText('Check Eligibility');
+    expect(checkBtn).toBeDisabled();
   });
 
-  it('shows eligible result for a valid adult citizen', () => {
-    render(<EligibilityChecker />);
+  it('shows eligible result for adult Indian citizen', () => {
+    renderWithLang(<EligibilityChecker />);
 
-    const dobInput = screen.getByLabelText('Date of Birth');
-    fireEvent.change(dobInput, { target: { value: '2000-01-01' } });
+    // Set DOB to 25 years ago
+    const dob = new Date();
+    dob.setFullYear(dob.getFullYear() - 25);
+    const dobStr = dob.toISOString().split('T')[0];
+    fireEvent.change(screen.getByLabelText(/Date of Birth/i), { target: { value: dobStr } });
 
-    const yesRadio = screen.getByLabelText('Yes, I am an Indian citizen');
-    fireEvent.click(yesRadio);
-
-    const button = screen.getByText('Check Eligibility');
-    fireEvent.click(button);
+    // Select Yes for citizen
+    fireEvent.click(screen.getByText('Yes'));
+    fireEvent.click(screen.getByText('Check Eligibility'));
 
     expect(screen.getByText(/Congratulations/)).toBeInTheDocument();
+    expect(screen.getByText(/eligible to vote/)).toBeInTheDocument();
   });
 
-  it('shows not eligible for non-citizens', () => {
-    render(<EligibilityChecker />);
+  it('shows not eligible for non-citizen', () => {
+    renderWithLang(<EligibilityChecker />);
 
-    const dobInput = screen.getByLabelText('Date of Birth');
-    fireEvent.change(dobInput, { target: { value: '2000-01-01' } });
-
-    const noRadio = screen.getByLabelText('No, I am not an Indian citizen');
-    fireEvent.click(noRadio);
-
-    const button = screen.getByText('Check Eligibility');
-    fireEvent.click(button);
+    const dob = new Date();
+    dob.setFullYear(dob.getFullYear() - 25);
+    fireEvent.change(screen.getByLabelText(/Date of Birth/i), { target: { value: dob.toISOString().split('T')[0] } });
+    fireEvent.click(screen.getByText('No'));
+    fireEvent.click(screen.getByText('Check Eligibility'));
 
     expect(screen.getByText(/Only Indian citizens/)).toBeInTheDocument();
   });
 
-  it('shows not eligible for underage users', () => {
-    render(<EligibilityChecker />);
+  it('shows too young message for minors', () => {
+    renderWithLang(<EligibilityChecker />);
 
-    // Set DOB to a recent year (will be under 18)
-    const currentYear = new Date().getFullYear();
-    const dobInput = screen.getByLabelText('Date of Birth');
-    fireEvent.change(dobInput, { target: { value: `${currentYear - 10}-06-15` } });
-
-    const yesRadio = screen.getByLabelText('Yes, I am an Indian citizen');
-    fireEvent.click(yesRadio);
-
-    const button = screen.getByText('Check Eligibility');
-    fireEvent.click(button);
+    const dob = new Date();
+    dob.setFullYear(dob.getFullYear() - 15);
+    fireEvent.change(screen.getByLabelText(/Date of Birth/i), { target: { value: dob.toISOString().split('T')[0] } });
+    fireEvent.click(screen.getByText('Yes'));
+    fireEvent.click(screen.getByText('Check Eligibility'));
 
     expect(screen.getByText(/minimum voting age/)).toBeInTheDocument();
   });
