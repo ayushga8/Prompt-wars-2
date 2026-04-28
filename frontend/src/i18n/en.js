@@ -128,6 +128,10 @@ const en = {
 
   // Badge
   badgeLocked: 'Locked',
+
+  // AI Explanations
+  aiExplanation: 'AI Tutor Explanation',
+  explainFallback: 'The correct answer is highlighted above. Review the module content for more details!',
 };
 
 export default en;

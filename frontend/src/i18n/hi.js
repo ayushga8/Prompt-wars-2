@@ -128,6 +128,10 @@ const hi = {
 
   // Badge
   badgeLocked: 'लॉक',
+
+  // AI Explanations
+  aiExplanation: 'AI ट्यूटर व्याख्या',
+  explainFallback: 'सही उत्तर ऊपर हाइलाइट किया गया है। अधिक जानकारी के लिए मॉड्यूल सामग्री देखें!',
 };
 
 export default hi;

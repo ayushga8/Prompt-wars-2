@@ -129,6 +129,10 @@ const ta = {
 
   // Badge
   badgeLocked: 'பூட்டு',
+
+  // AI Explanations
+  aiExplanation: 'AI ஆசிரியர் விளக்கம்',
+  explainFallback: 'சரியான பதில் மேலே முன்னிலைப்படுத்தப்பட்டுள்ளது. மேலும் விவரங்களுக்கு தொகுதி உள்ளடக்கத்தைப் பாருங்கள்!',
 };
 
 export default ta;

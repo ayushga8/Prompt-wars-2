@@ -2,22 +2,47 @@ import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useLanguage } from '../i18n/LanguageContext';
 
+const BACKEND_URL = '';
+
 export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [allCorrect, setAllCorrect] = useState(false);
+  const [explanations, setExplanations] = useState({});
+  const [loadingExplanations, setLoadingExplanations] = useState({});
 
   // Reset when module changes
   useEffect(() => {
     setAnswers({});
     setSubmitted(false);
     setAllCorrect(false);
+    setExplanations({});
+    setLoadingExplanations({});
   }, [moduleId]);
 
   const handleSelect = (qIndex, optIndex) => {
     if (submitted) return;
     setAnswers(prev => ({ ...prev, [qIndex]: optIndex }));
+  };
+
+  const fetchExplanation = async (qIndex, question, userAnswer, correctAnswer) => {
+    setLoadingExplanations(prev => ({ ...prev, [qIndex]: true }));
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/explain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, userAnswer, correctAnswer, lang })
+      });
+      const data = await res.json();
+      if (data.explanation) {
+        setExplanations(prev => ({ ...prev, [qIndex]: data.explanation }));
+      }
+    } catch {
+      setExplanations(prev => ({ ...prev, [qIndex]: t('explainFallback') }));
+    } finally {
+      setLoadingExplanations(prev => ({ ...prev, [qIndex]: false }));
+    }
   };
 
   const handleSubmit = () => {
@@ -30,6 +55,13 @@ export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect })
     if (correct) {
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 1000 });
       setTimeout(() => onAllCorrect(), 500);
+    } else {
+      // Fetch AI explanations for wrong answers
+      questions.forEach((q, i) => {
+        if (answers[i] !== q.correctIndex) {
+          fetchExplanation(i, q.question, q.options[answers[i]], q.options[q.correctIndex]);
+        }
+      });
     }
   };
 
@@ -37,6 +69,8 @@ export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect })
     setAnswers({});
     setSubmitted(false);
     setAllCorrect(false);
+    setExplanations({});
+    setLoadingExplanations({});
   };
 
   if (isCompleted) {
@@ -72,6 +106,27 @@ export default function Quiz({ questions, moduleId, isCompleted, onAllCorrect })
               );
             })}
           </div>
+
+          {/* AI Explanation for wrong answers */}
+          {submitted && answers[qIndex] !== q.correctIndex && (
+            <div className="ai-explanation fade-in">
+              <div className="ai-explanation-header">
+                <span className="ai-icon">🤖</span>
+                <span className="ai-label">{t('aiExplanation')}</span>
+              </div>
+              {loadingExplanations[qIndex] ? (
+                <div className="ai-loading">
+                  <span className="ai-dot"></span>
+                  <span className="ai-dot"></span>
+                  <span className="ai-dot"></span>
+                </div>
+              ) : explanations[qIndex] ? (
+                <p className="ai-text">{explanations[qIndex]}</p>
+              ) : (
+                <p className="ai-text ai-fallback">{t('explainFallback')}</p>
+              )}
+            </div>
+          )}
         </div>
       ))}
 

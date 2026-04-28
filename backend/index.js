@@ -212,11 +212,15 @@ app.post('/api/welcome-email', rateLimit, async (req, res) => {
 // AI Chat Endpoint (Gemini)
 // =============================================
 app.post('/api/chat', async (req, res) => {
-  const { message, moduleContext } = req.body;
+  const { message, moduleContext, lang } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
 
   // Sanitize input — limit length to prevent prompt injection abuse
   const sanitizedMessage = message.slice(0, 2000).trim();
+
+  const langInstruction = lang === 'hi' ? 'Respond in Hindi (हिन्दी). Use Devanagari script.'
+    : lang === 'ta' ? 'Respond in Tamil (தமிழ்). Use Tamil script.'
+    : 'Respond in English.';
 
   const systemPrompt = `You are an expert Indian Election Process Education tutor. The user is currently learning about "${moduleContext || 'Indian Elections'}". 
     
@@ -227,7 +231,8 @@ Your responses should be:
 - Friendly and encouraging
 - If asked about something unrelated to elections or civics, politely redirect to election topics
 - Use simple language suitable for Indian students
-- Keep responses under 200 words unless the user asks for detail`;
+- Keep responses under 200 words unless the user asks for detail
+- ${langInstruction}`;
 
   if (!genAI) {
     return res.status(500).json({ 
@@ -259,6 +264,46 @@ Your responses should be:
     error: 'All AI models are currently unavailable',
     reply: 'I\'m currently experiencing high demand. Please try again in a few seconds.' 
   });
+});
+
+// =============================================
+// AI Quiz Explanation Endpoint
+// =============================================
+app.post('/api/explain', async (req, res) => {
+  const { question, userAnswer, correctAnswer, lang } = req.body;
+  if (!question || !correctAnswer) return res.status(400).json({ error: 'Question and correct answer are required' });
+
+  const langInstruction = lang === 'hi' ? 'Respond in Hindi (हिन्दी). Use Devanagari script.'
+    : lang === 'ta' ? 'Respond in Tamil (தமிழ்). Use Tamil script.'
+    : 'Respond in English.';
+
+  const prompt = `You are an Indian election education tutor. A student answered a quiz question incorrectly. Explain why their answer is wrong and why the correct answer is right.
+
+${langInstruction}
+
+Question: ${question}
+Student's answer: ${userAnswer}
+Correct answer: ${correctAnswer}
+
+Give a brief, encouraging explanation in 2-3 sentences. Start by acknowledging the attempt, then explain the correct answer with a relevant fact about Indian elections. Do NOT use markdown formatting.`;
+
+  if (!genAI) {
+    return res.status(500).json({ error: 'AI not configured', explanation: '' });
+  }
+
+  const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-2.0-flash'];
+  for (const modelName of modelsToTry) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent([{ text: prompt }]);
+      return res.json({ explanation: result.response.text() });
+    } catch (error) {
+      console.warn(`Explain model ${modelName} failed:`, error.message);
+      continue;
+    }
+  }
+
+  res.status(500).json({ error: 'AI unavailable', explanation: '' });
 });
 
 // =============================================
