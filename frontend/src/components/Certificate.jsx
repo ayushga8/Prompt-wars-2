@@ -1,35 +1,67 @@
-import { useState } from 'react';
+/**
+ * @module components/Certificate
+ * @description PDF certificate generator for course completion.
+ * Renders a visually styled certificate on an HTML Canvas element,
+ * converts it to a PDF using jsPDF, and triggers a download.
+ * Supports English and Hindi certificate languages.
+ */
+
+import { useState, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import confetti from 'canvas-confetti';
+import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext';
 import en from '../i18n/en';
 import hi from '../i18n/hi';
 
+/** @constant {Object} certStrings - Certificate text strings indexed by language code */
 const certStrings = { en, hi };
 
+/** @constant {number} CANVAS_WIDTH - Certificate canvas width in pixels */
+const CANVAS_WIDTH = 1000;
+
+/** @constant {number} CANVAS_HEIGHT - Certificate canvas height in pixels */
+const CANVAS_HEIGHT = 700;
+
+/**
+ * Certificate component that generates and downloads a PDF certificate.
+ * Locked state is shown when not all modules are completed.
+ *
+ * @param {Object} props
+ * @param {string} props.userName - The user's display name for the certificate
+ * @param {number} props.badgeCount - Number of badges earned so far
+ * @param {number} props.totalModules - Total number of earnable modules
+ * @returns {JSX.Element} Certificate UI (locked or ready state)
+ */
 export default function Certificate({ userName, badgeCount, totalModules }) {
   const { t } = useLanguage();
   const allComplete = badgeCount >= totalModules;
   const [certLang, setCertLang] = useState('en');
 
-  const handleDownload = () => {
+  /**
+   * Generates the certificate as a Canvas image, converts to PDF, and triggers download.
+   * Fires confetti animation on successful generation.
+   */
+  const handleDownload = useCallback(() => {
     const ct = certStrings[certLang] || en;
     const canvas = document.createElement('canvas');
-    canvas.width = 1000;
-    canvas.height = 700;
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
     const ctx = canvas.getContext('2d');
 
-    // Background
-    const grad = ctx.createLinearGradient(0, 0, 1000, 700);
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     grad.addColorStop(0, '#0b1120');
     grad.addColorStop(1, '#1a1a3e');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1000, 700);
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Border
+    // Outer border
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 4;
     ctx.strokeRect(30, 30, 940, 640);
+
+    // Inner decorative border
     ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
     ctx.lineWidth = 1;
     ctx.strokeRect(40, 40, 920, 620);
@@ -63,14 +95,14 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     ctx.font = 'bold 36px Outfit, sans-serif';
     ctx.fillText(userName || 'Student', 500, 300);
 
-    // Body
+    // Body text
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '18px Inter, sans-serif';
     ctx.fillText(ct.certBody1, 500, 360);
     ctx.fillText(ct.certBody2, 500, 390);
     ctx.fillText(ct.certBody3, 500, 420);
 
-    // Badges
+    // Badges earned
     ctx.fillStyle = '#f1f5f9';
     ctx.font = '16px Inter, sans-serif';
     ctx.fillText(ct.certBadges, 500, 480);
@@ -85,18 +117,18 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     ctx.font = '12px Inter, sans-serif';
     ctx.fillText(ct.certFooter, 500, 620);
 
-    // Download as PDF
+    // Generate PDF from canvas
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'px',
-      format: [1000, 700]
+      format: [CANVAS_WIDTH, CANVAS_HEIGHT]
     });
-    pdf.addImage(imgData, 'PNG', 0, 0, 1000, 700);
+    pdf.addImage(imgData, 'PNG', 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     pdf.save('election-education-certificate.pdf');
 
     confetti({ particleCount: 200, spread: 120, origin: { y: 0.3 }, zIndex: 1000 });
-  };
+  }, [certLang, userName]);
 
   if (!allComplete) {
     return (
@@ -136,3 +168,12 @@ export default function Certificate({ userName, badgeCount, totalModules }) {
     </div>
   );
 }
+
+Certificate.propTypes = {
+  /** The user's display name to print on the certificate */
+  userName: PropTypes.string.isRequired,
+  /** Number of badges/modules the user has completed */
+  badgeCount: PropTypes.number.isRequired,
+  /** Total number of completable modules (excludes overview) */
+  totalModules: PropTypes.number.isRequired,
+};

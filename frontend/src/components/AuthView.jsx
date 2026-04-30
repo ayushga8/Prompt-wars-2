@@ -1,9 +1,32 @@
-import { useState } from 'react';
+/**
+ * @module components/AuthView
+ * @description Authentication view supporting Google Sign-In and Email OTP login.
+ * Provides a two-step OTP flow: enter name/email → receive and verify OTP code.
+ * All text is internationalized via the LanguageContext.
+ */
+
+import { useState, useCallback } from 'react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useLanguage } from '../i18n/LanguageContext';
+import PropTypes from 'prop-types';
 
+/** @constant {string} BACKEND_URL - Base URL for backend API calls (empty for same-origin) */
 const BACKEND_URL = '';
+
+/** @constant {number} ERROR_DISPLAY_MS - Duration to show error messages before auto-clearing */
+const ERROR_DISPLAY_MS = 5000;
+
+/** @constant {number} OTP_CODE_LENGTH - Expected length of the OTP code */
+const OTP_CODE_LENGTH = 6;
+
+/**
+ * Authentication view component with dual login methods.
+ *
+ * @param {Object} props
+ * @param {Function} props.onOtpLogin - Callback invoked on successful OTP verification with (displayName, email)
+ * @returns {JSX.Element} The authentication form UI
+ */
 export default function AuthView({ onOtpLogin }) {
   const { t } = useLanguage();
   const [step, setStep] = useState('email'); // 'email' | 'otp'
@@ -14,20 +37,23 @@ export default function AuthView({ onOtpLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const showError = (msg) => {
+  /** Displays an error message that auto-clears after ERROR_DISPLAY_MS */
+  const showError = useCallback((msg) => {
     setError(msg);
-    setTimeout(() => setError(''), 5000);
-  };
+    setTimeout(() => setError(''), ERROR_DISPLAY_MS);
+  }, []);
 
-  const handleGoogle = async () => {
+  /** Initiates Google Sign-In via Firebase popup */
+  const handleGoogle = useCallback(async () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       showError(err.message);
     }
-  };
+  }, [showError]);
 
-  const handleSendOtp = async () => {
+  /** Validates name/email fields and requests OTP delivery */
+  const handleSendOtp = useCallback(async () => {
     if (!firstName.trim() || !lastName.trim()) return showError(t('errorName'));
     if (!email.trim() || !email.includes('@')) return showError(t('errorEmail'));
     
@@ -49,10 +75,11 @@ export default function AuthView({ onOtpLogin }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [firstName, lastName, email, showError, t]);
 
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) return showError(t('errorOtp'));
+  /** Verifies the entered OTP code against the backend */
+  const handleVerifyOtp = useCallback(async () => {
+    if (otp.length !== OTP_CODE_LENGTH) return showError(t('errorOtp'));
 
     setLoading(true);
     try {
@@ -72,7 +99,7 @@ export default function AuthView({ onOtpLogin }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [otp, email, firstName, lastName, onOtpLogin, showError, t]);
 
   return (
     <section className="auth-view" aria-label="Authentication">
@@ -111,7 +138,7 @@ export default function AuthView({ onOtpLogin }) {
             <div className="otp-step">
               <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{t('otpSentTo')} <strong>{email}</strong></p>
               <label htmlFor="auth-otp" className="sr-only">{t('enterOtp')}</label>
-              <input id="auth-otp" className="input-field" placeholder={t('enterOtp')} maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]*" />
+              <input id="auth-otp" className="input-field" placeholder={t('enterOtp')} maxLength={OTP_CODE_LENGTH} value={otp} onChange={e => setOtp(e.target.value)} autoComplete="one-time-code" inputMode="numeric" pattern="[0-9]*" />
               <button className="btn success-btn" onClick={handleVerifyOtp} disabled={loading} aria-label={t('verifyOtp')}>
                 {loading ? t('verifying') : t('verifyOtp')}
               </button>
@@ -125,3 +152,8 @@ export default function AuthView({ onOtpLogin }) {
     </section>
   );
 }
+
+AuthView.propTypes = {
+  /** Callback invoked on successful OTP login with (displayName, email) */
+  onOtpLogin: PropTypes.func.isRequired,
+};

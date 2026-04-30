@@ -1,13 +1,19 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Election Education backend API with Gemini AI, OTP auth, and welcome emails",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run --config vitest.config.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "election",
+    "education",
+    "gemini",
+    "ai"
+  ],
+  "author": "Ayush",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -15,7 +21,12 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
     "firebase-admin": "^13.8.0",
+    "helmet": "^8.1.0",
     "nodemailer": "^8.0.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.5"
   }
 }

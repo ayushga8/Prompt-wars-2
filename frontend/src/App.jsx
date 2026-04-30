@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -11,7 +11,12 @@ import ChatPanel from './components/ChatPanel';
 import BadgeBar from './components/BadgeBar';
 import LanguageSwitcher from './components/LanguageSwitcher';
 
-// Restore cached user from localStorage for instant rendering on refresh
+/**
+ * Retrieves the cached user object from localStorage for instant rendering on refresh.
+ * Prevents a flash of the login screen while Firebase Auth initializes.
+ *
+ * @returns {Object|null} Cached user object with displayName, email, and isOtp fields, or null
+ */
 function getCachedUser() {
   try {
     const cached = localStorage.getItem('cachedUser');
@@ -19,6 +24,14 @@ function getCachedUser() {
   } catch { return null; }
 }
 
+/**
+ * Persists or clears the user object in localStorage for session restoration.
+ *
+ * @param {Object|null} u - User object to cache, or null to clear
+ * @param {string} [u.displayName] - User's display name
+ * @param {string} u.email - User's email address
+ * @param {boolean} [u.isOtp] - Whether the user authenticated via OTP
+ */
 function cacheUser(u) {
   try {
     if (u) {
@@ -33,6 +46,11 @@ function cacheUser(u) {
   } catch { /* localStorage not available */ }
 }
 
+/**
+ * Retrieves cached learning progress from localStorage.
+ *
+ * @returns {Object|null} Object with completedModules array and earnedBadges array, or null
+ */
 function getCachedProgress() {
   try {
     const cached = localStorage.getItem('cachedProgress');
@@ -40,6 +58,12 @@ function getCachedProgress() {
   } catch { return null; }
 }
 
+/**
+ * Persists learning progress to localStorage for offline resilience.
+ *
+ * @param {Set<string>} completedModules - Set of completed module IDs
+ * @param {Array<{icon: string, label: string}>} earnedBadges - Array of earned badge objects
+ */
 function cacheProgress(completedModules, earnedBadges) {
   try {
     localStorage.setItem('cachedProgress', JSON.stringify({
@@ -49,9 +73,16 @@ function cacheProgress(completedModules, earnedBadges) {
   } catch { /* localStorage not available */ }
 }
 
+/**
+ * Root application component managing authentication state, learning progress,
+ * module navigation, and theme toggling. Orchestrates the main layout including
+ * navigation bar, sidebar, content area, and AI chat panel.
+ *
+ * @returns {JSX.Element} The complete application UI
+ */
 export default function App() {
   const { lang, t } = useLanguage();
-  const modules = getModules(lang);
+  const modules = useMemo(() => getModules(lang), [lang]);
 
   const cachedUser = getCachedUser();
   const cachedProgress = getCachedProgress();
@@ -78,10 +109,19 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = useCallback(
+    () => setTheme(prev => prev === 'dark' ? 'light' : 'dark'),
+    []
+  );
 
-  // Send welcome email on first login only
-  const sendWelcomeEmail = async (email, name) => {
+  /**
+   * Sends a welcome email to new users on their first login.
+   * Non-critical — failures are silently logged.
+   *
+   * @param {string} email - User's email address
+   * @param {string} name - User's display name
+   */
+  const sendWelcomeEmail = useCallback(async (email, name) => {
     try {
       await fetch('/api/welcome-email', {
         method: 'POST',
@@ -91,10 +131,15 @@ export default function App() {
     } catch (err) {
       console.warn('Welcome email failed (non-critical):', err);
     }
-  };
+  }, []);
 
-  // Load user progress from Firestore (non-blocking, runs in background)
-  const loadUserProgress = async (u) => {
+  /**
+   * Loads user progress from Firestore in the background.
+   * Creates an initial document with a welcome email for first-time users.
+   *
+   * @param {Object} u - The authenticated user object
+   */
+  const loadUserProgress = useCallback(async (u) => {
     try {
       const docRef = doc(db, 'users', u.email);
       const docSnap = await getDoc(docRef);
@@ -113,7 +158,7 @@ export default function App() {
     } catch (err) {
       console.warn('Failed to load user data from Firestore:', err);
     }
-  };
+  }, [sendWelcomeEmail]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -131,9 +176,14 @@ export default function App() {
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [loadUserProgress]);
 
-  const handleModuleComplete = async (moduleId) => {
+  /**
+   * Marks a module as completed, awards its badge, and persists to Firestore.
+   *
+   * @param {string} moduleId - The ID of the completed module
+   */
+  const handleModuleComplete = useCallback(async (moduleId) => {
     if (completedModules.has(moduleId)) return;
     
     const newCompleted = new Set(completedModules);
@@ -150,28 +200,45 @@ export default function App() {
     // Cache progress locally
     cacheProgress(newCompleted, newBadges);
 
-    // Save to Firestore
+    // Save to Firestore with error handling
     if (user && user.email) {
-      const docRef = doc(db, 'users', user.email);
-      await setDoc(docRef, {
-        completedModules: Array.from(newCompleted),
-        earnedBadges: newBadges
-      }, { merge: true });
+      try {
+        const docRef = doc(db, 'users', user.email);
+        await setDoc(docRef, {
+          completedModules: Array.from(newCompleted),
+          earnedBadges: newBadges
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Failed to save progress to Firestore:', err);
+      }
     }
-  };
+  }, [completedModules, earnedBadges, modules, user]);
 
-  const handleSignOut = async () => {
-    await signOut(auth);
+  /**
+   * Signs out the current user, clears all cached state, and resets to the overview module.
+   */
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Sign out error:', err);
+    }
     setUser(null);
     cacheUser(null);
     localStorage.removeItem('cachedProgress');
     setCompletedModules(new Set());
     setEarnedBadges([]);
     setActiveModuleId('overview');
-  };
+  }, []);
 
-  // Handle OTP-authenticated users (no Firebase user object)
-  const handleOtpLogin = async (displayName, email) => {
+  /**
+   * Handles login for OTP-authenticated users who don't have a Firebase user object.
+   * Creates a synthetic user object and loads their Firestore progress.
+   *
+   * @param {string} displayName - User's full name
+   * @param {string} email - User's email address
+   */
+  const handleOtpLogin = useCallback(async (displayName, email) => {
     const otpUser = { displayName, email: email || displayName, isOtp: true };
     setUser(otpUser);
     cacheUser(otpUser);
@@ -193,7 +260,11 @@ export default function App() {
     } catch (err) {
       console.warn('Failed to load OTP user data from Firestore:', err);
     }
-  };
+  }, [sendWelcomeEmail]);
+
+  /** Toggle chat panel visibility */
+  const toggleChat = useCallback(() => setChatOpen(prev => !prev), []);
+  const closeChat = useCallback(() => setChatOpen(false), []);
 
   if (loading) {
     return (
@@ -264,7 +335,7 @@ export default function App() {
 
       <button
         className="chat-toggle-btn"
-        onClick={() => setChatOpen(!chatOpen)}
+        onClick={toggleChat}
         title={t('chatPlaceholder')}
         aria-label={chatOpen ? 'Close AI chat' : 'Open AI chat'}
         aria-expanded={chatOpen}
@@ -275,7 +346,7 @@ export default function App() {
       {chatOpen && (
         <ChatPanel
           moduleContext={activeModule.title}
-          onClose={() => setChatOpen(false)}
+          onClose={closeChat}
         />
       )}
     </div>

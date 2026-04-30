@@ -1,3 +1,18 @@
+/**
+ * @module components/Timeline
+ * @description Animated step-by-step timeline component for visualizing
+ * election processes. Alternates items left/right for visual interest.
+ */
+
+import PropTypes from 'prop-types';
+
+/**
+ * Timeline component rendering an alternating left-right step sequence.
+ *
+ * @param {Object} props
+ * @param {Array<{title: string, description: string}>} props.steps - Timeline step data
+ * @returns {JSX.Element}
+ */
 export default function Timeline({ steps }) {
   return (
     <div className="timeline">
@@ -15,3 +30,13 @@ export default function Timeline({ steps }) {
     </div>
   );
 }
+
+Timeline.propTypes = {
+  /** Array of timeline steps, each with a title and description */
+  steps: PropTypes.arrayOf(
+    PropTypes.shape({
+      title: PropTypes.string.isRequired,
+      description: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+};

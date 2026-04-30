@@ -1,6 +1,23 @@
+/**
+ * @module components/ElectionStats
+ * @description Animated election statistics dashboard with intersection observer-triggered
+ * count-up animations. Displays key Indian election metrics.
+ */
+
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext';
 
+/** @constant {number} DEFAULT_ANIMATION_DURATION - Default count animation duration in ms */
+const DEFAULT_ANIMATION_DURATION = 2000;
+
+/** @constant {number} INTERSECTION_THRESHOLD - Viewport intersection ratio to trigger animation */
+const INTERSECTION_THRESHOLD = 0.3;
+
+/**
+ * Election statistics dashboard with animated counters.
+ * @returns {JSX.Element}
+ */
 export default function ElectionStats() {
   const { t } = useLanguage();
 
@@ -36,7 +53,18 @@ export default function ElectionStats() {
   );
 }
 
-function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 }) {
+/**
+ * Animated counter that counts up from 0 to a target value when scrolled into view.
+ * Uses IntersectionObserver to trigger the animation only when visible.
+ *
+ * @param {Object} props
+ * @param {number} props.target - The target number to count up to
+ * @param {string} [props.suffix=''] - Text suffix appended after the number
+ * @param {number} [props.decimals=0] - Number of decimal places to display
+ * @param {number} [props.duration=2000] - Animation duration in milliseconds
+ * @returns {JSX.Element}
+ */
+function AnimatedCounter({ target, suffix = '', decimals = 0, duration = DEFAULT_ANIMATION_DURATION }) {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
   const started = useRef(false);
@@ -50,14 +78,14 @@ function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 })
           const animate = () => {
             const elapsed = Date.now() - start;
             const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
+            const eased = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
             setCount(eased * target);
             if (progress < 1) requestAnimationFrame(animate);
           };
           requestAnimationFrame(animate);
         }
       },
-      { threshold: 0.3 }
+      { threshold: INTERSECTION_THRESHOLD }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
@@ -69,3 +97,10 @@ function AnimatedCounter({ target, suffix = '', decimals = 0, duration = 2000 })
 
   return <span ref={ref}>{formatted}{suffix}</span>;
 }
+
+AnimatedCounter.propTypes = {
+  target: PropTypes.number.isRequired,
+  suffix: PropTypes.string,
+  decimals: PropTypes.number,
+  duration: PropTypes.number,
+};

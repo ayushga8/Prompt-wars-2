@@ -1,13 +1,32 @@
-import { useState } from 'react';
+/**
+ * @module components/EligibilityChecker
+ * @description Interactive voter eligibility checker tool.
+ * Calculates voting eligibility based on the January 1st qualifying date rule
+ * used by the Election Commission of India.
+ */
+
+import { useState, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext';
 
+/** @constant {number} MIN_VOTING_AGE - Minimum age to be eligible to vote in India */
+const MIN_VOTING_AGE = 18;
+
+/**
+ * Voter eligibility checker component.
+ * @returns {JSX.Element}
+ */
 export default function EligibilityChecker() {
   const { t } = useLanguage();
   const [dob, setDob] = useState('');
   const [citizen, setCitizen] = useState('');
   const [result, setResult] = useState(null);
 
-  const checkEligibility = () => {
+  /**
+   * Calculates voter eligibility based on DOB and citizenship.
+   * Uses the January 1st qualifying date as per ECI rules.
+   */
+  const checkEligibility = useCallback(() => {
     if (!dob || !citizen) return;
 
     const birthDate = new Date(dob);
@@ -17,7 +36,7 @@ export default function EligibilityChecker() {
     const m = qualifyingDate.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && qualifyingDate.getDate() < birthDate.getDate())) age--;
 
-    const isOldEnough = age >= 18;
+    const isOldEnough = age >= MIN_VOTING_AGE;
     const isCitizen = citizen === 'yes';
 
     if (isOldEnough && isCitizen) {
@@ -27,7 +46,7 @@ export default function EligibilityChecker() {
     } else {
       setResult({ eligible: false, message: t('tooYoungMsg')(age), tip: t('tooYoungTip') });
     }
-  };
+  }, [dob, citizen, t]);
 
   return (
     <div className="eligibility-checker" role="region" aria-label={t('eligibilityTitle')}>

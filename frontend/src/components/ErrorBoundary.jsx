@@ -1,15 +1,38 @@
-import { Component } from 'react';
+/**
+ * @module components/ErrorBoundary
+ * @description React error boundary that catches unhandled component errors
+ * and displays a fallback UI instead of a white screen crash.
+ */
 
+import { Component } from 'react';
+import PropTypes from 'prop-types';
+
+/**
+ * Error boundary component that wraps child components to catch rendering errors.
+ * Displays a user-friendly error screen with a reload button on crash.
+ *
+ * @extends Component
+ */
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
+  /**
+   * Updates state when a child component throws during rendering.
+   * @param {Error} error - The thrown error
+   * @returns {Object} New state with hasError flag
+   */
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
+  /**
+   * Logs error details for debugging.
+   * @param {Error} error - The caught error
+   * @param {Object} errorInfo - React error info with componentStack
+   */
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
@@ -60,3 +83,8 @@ export default class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.propTypes = {
+  /** Child components to wrap with error boundary protection */
+  children: PropTypes.node.isRequired,
+};

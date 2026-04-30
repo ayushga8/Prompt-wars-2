@@ -1,7 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+/**
+ * @module components/EVMSimulator
+ * @description Interactive Electronic Voting Machine simulator replicating
+ * the real Indian EVM/VVPAT experience with candidate selection, VVPAT
+ * verification slip, and confetti celebration.
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import PropTypes from 'prop-types';
 import { useLanguage } from '../i18n/LanguageContext';
 
+/** @constant {number} VVPAT_DISPLAY_SECONDS - Duration the VVPAT slip is visible */
+const VVPAT_DISPLAY_SECONDS = 7;
+
+/**
+ * EVM Simulator component with realistic voting flow.
+ * @returns {JSX.Element}
+ */
 export default function EVMSimulator() {
   const { t } = useLanguage();
 
@@ -12,22 +27,24 @@ export default function EVMSimulator() {
     { name: t('nota'), party: t('partyNota'), symbol: '✖️' },
   ];
 
-  const [step, setStep] = useState('ready'); // ready | voting | vvpat | done
+  const [step, setStep] = useState('ready');
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [vvpatVisible, setVvpatVisible] = useState(false);
-  const [countdown, setCountdown] = useState(7);
+  const [countdown, setCountdown] = useState(VVPAT_DISPLAY_SECONDS);
   const timerRef = useRef(null);
 
-  const handleVote = (idx) => {
+  /** Selects a candidate during the voting step */
+  const handleVote = useCallback((idx) => {
     if (step !== 'voting') return;
     setSelectedIdx(idx);
-  };
+  }, [step]);
 
-  const handlePress = () => {
+  /** Confirms the vote, triggers VVPAT display and countdown */
+  const handlePress = useCallback(() => {
     if (selectedIdx === null) return;
     setStep('vvpat');
     setVvpatVisible(true);
-    setCountdown(7);
+    setCountdown(VVPAT_DISPLAY_SECONDS);
 
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
@@ -41,15 +58,21 @@ export default function EVMSimulator() {
         return prev - 1;
       });
     }, 1000);
-  };
+  }, [selectedIdx]);
 
-  // Keyboard navigation for EVM buttons
-  const handleKeyDown = (e, idx) => {
+  /** Keyboard navigation handler for EVM buttons */
+  const handleKeyDown = useCallback((e, idx) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       handleVote(idx);
     }
-  };
+  }, [handleVote]);
+
+  /** Resets the simulator to the initial state */
+  const handleReset = useCallback(() => {
+    setStep('ready');
+    setSelectedIdx(null);
+  }, []);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -88,28 +111,19 @@ export default function EVMSimulator() {
                   <span className="evm-name">{c.name}</span>
                   <span className="evm-party">{c.party}</span>
                   <span className="evm-symbol" aria-hidden="true">{c.symbol}</span>
-                  <button
-                    className={`evm-btn ${selectedIdx === i ? 'pressed' : ''}`}
-                    onClick={() => handleVote(i)}
-                    onKeyDown={(e) => handleKeyDown(e, i)}
-                    role="radio"
-                    aria-checked={selectedIdx === i}
-                    aria-label={`${c.name} — ${c.party}`}
-                    tabIndex={0}
-                  >
+                  <button className={`evm-btn ${selectedIdx === i ? 'pressed' : ''}`}
+                    onClick={() => handleVote(i)} onKeyDown={(e) => handleKeyDown(e, i)}
+                    role="radio" aria-checked={selectedIdx === i}
+                    aria-label={`${c.name} — ${c.party}`} tabIndex={0}>
                     {selectedIdx === i ? '●' : '○'}
                   </button>
                 </div>
               ))}
             </div>
           </div>
-          <button
-            className="btn success-btn"
-            style={{ maxWidth: '300px', margin: '1.5rem auto 0' }}
-            onClick={handlePress}
-            disabled={selectedIdx === null}
-            aria-label={selectedIdx === null ? t('selectCandidate') : t('confirmVote')}
-          >
+          <button className="btn success-btn" style={{ maxWidth: '300px', margin: '1.5rem auto 0' }}
+            onClick={handlePress} disabled={selectedIdx === null}
+            aria-label={selectedIdx === null ? t('selectCandidate') : t('confirmVote')}>
             {selectedIdx === null ? t('selectCandidate') : t('confirmVote')}
           </button>
         </div>
@@ -144,7 +158,7 @@ export default function EVMSimulator() {
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }} aria-hidden="true">🎉</div>
           <h3 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>{t('voteCast')}</h3>
           <p style={{ color: 'var(--text-secondary)' }}>{t('voteCastSub')}</p>
-          <button className="btn outline-btn" style={{ maxWidth: '200px', margin: '1.5rem auto 0' }} onClick={() => { setStep('ready'); setSelectedIdx(null); }} aria-label={t('tryAgainEvm')}>
+          <button className="btn outline-btn" style={{ maxWidth: '200px', margin: '1.5rem auto 0' }} onClick={handleReset} aria-label={t('tryAgainEvm')}>
             {t('tryAgainEvm')}
           </button>
         </div>
