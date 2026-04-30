@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { useLanguage } from './i18n/LanguageContext';
@@ -161,6 +161,13 @@ export default function App() {
   }, [sendWelcomeEmail]);
 
   useEffect(() => {
+    // Handle redirect result from Google Sign-In fallback
+    getRedirectResult(auth).catch((err) => {
+      if (err.code !== 'auth/null-user') {
+        console.warn('Redirect auth result error:', err);
+      }
+    });
+
     const unsub = onAuthStateChanged(auth, (u) => {
       if (u) {
         setUser(u);

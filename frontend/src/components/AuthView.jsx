@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useLanguage } from '../i18n/LanguageContext';
 import PropTypes from 'prop-types';
@@ -43,12 +43,21 @@ export default function AuthView({ onOtpLogin }) {
     setTimeout(() => setError(''), ERROR_DISPLAY_MS);
   }, []);
 
-  /** Initiates Google Sign-In via Firebase popup */
+  /** Initiates Google Sign-In via Firebase popup, falls back to redirect */
   const handleGoogle = useCallback(async () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
-      showError(err.message);
+      // If popup was blocked or closed, fall back to redirect flow
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectErr) {
+          showError(redirectErr.message);
+        }
+      } else {
+        showError(err.message);
+      }
     }
   }, [showError]);
 
