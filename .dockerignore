@@ -6,4 +6,12 @@ npm-debug.log
 .dockerignore
 Dockerfile
 frontend/dist
+frontend/node_modules
+frontend/src/test
+frontend/eslint.config.js
 backend/node_modules
+backend/test
+backend/vitest.config.js
+*.test.js
+*.test.jsx
+README.md

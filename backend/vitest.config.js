@@ -1,7 +1,6 @@
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
+/** @type {import('vitest/config').UserConfig} */
+module.exports = {
   test: {
     globals: true,
   },
-});
+};
